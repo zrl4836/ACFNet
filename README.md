@@ -19,8 +19,9 @@ annotated data used for training.
 
 
 ## Architecture
-!(https://github.com/zrl4836/ACFNet/blob/master/arch/1.PNG)
-!(https://github.com/zrl4836/ACFNet/blob/master/arch/2.PNG)
+![arch1](https://github.com/zrl4836/ACFNet/blob/master/arch/1.PNG)
+![arch2](https://github.com/zrl4836/ACFNet/blob/master/arch/2.PNG)
+
 ### Requirements
 
 Python 3.7

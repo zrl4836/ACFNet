@@ -62,7 +62,7 @@ def get_parser():
                         help="choose the number of recurrence.")
     parser.add_argument("--whole", type=bool, default=False,
                         help="use whole input size.")
-    parser.add_argument("--model", type=str, default='None',
+    parser.add_argument("--model", type=str, default='acfnet',
                         help="choose model.")
     return parser
 

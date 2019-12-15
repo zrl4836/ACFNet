@@ -107,7 +107,7 @@ def get_parser():
                         help="Regularisation parameter for L2-loss.")
     parser.add_argument("--gpu", type=str, default='None',
                         help="choose gpu device.")
-    parser.add_argument("--model", type=str, default='None',
+    parser.add_argument("--model", type=str, default='acfnet',
                         help="choose model.")
     parser.add_argument("--num-workers", type=int, default=8,
                         help="choose the number of workers.")

@@ -191,7 +191,7 @@ class ResNet(nn.Module):
             return outs
 
 
-def Seg_Model(num_classes, criterion=None, pretrained_model=None, recurrence=0, **kwargs):
+def Seg_Model(num_classes, criterion=None, pretrained_model=None, recurrence=2, **kwargs):
     model = ResNet(Bottleneck,[3, 4, 23, 3], num_classes, criterion, recurrence)
 
     if pretrained_model is not None:

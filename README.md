@@ -5,6 +5,8 @@
 ## Note: 
 The code can running, but I don't have enough GPUs to train the model. 
 If you have GPUs to train, I believe you can get a good result. Welcome to tell me about your results.
+This code is based on my understanding,and if you find any error in the code or different from the paper, please let me know in time.
+Mail:840996363@qq.com.
 Good luck!
 
 ## Introduction

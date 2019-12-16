@@ -171,12 +171,13 @@ class ACFModule(nn.Module):
             nn.Dropout2d(0.1),
             nn.Conv2d(out_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         )
+        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x, coarse_x):
         class_output = self.acf(x, coarse_x)
         output = self.conva(x)
         # CONCAT or SUM
-        feat_sum = class_output + output
+        feat_sum = class_output * self.gamma + output
         output = self.bottleneck(feat_sum)
         return output
 

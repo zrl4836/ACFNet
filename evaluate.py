@@ -127,7 +127,8 @@ def predict_sliding(net, image, tile_size, classes, recurrence):
             # print("Predicting tile %i" % tile_counter)
             padded_prediction = net(torch.from_numpy(padded_img).cuda(non_blocking=True))
             if isinstance(padded_prediction, list):
-                padded_prediction = padded_prediction[0]
+                #padded_prediction = padded_prediction[0]
+                padded_prediction = padded_prediction[0] + padded_prediction[1]
             padded_prediction = interp(padded_prediction).cpu().numpy().transpose(0,2,3,1)
             prediction = padded_prediction[0, 0:img.shape[2], 0:img.shape[3], :]
             count_predictions[0, y1:y2, x1:x2] += 1

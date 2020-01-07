@@ -102,7 +102,10 @@ class acf_Module(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(acf_Module, self).__init__()
         self.softmax = nn.Softmax(dim=-1)
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.conv1 = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                                BatchNorm2d(out_channels),
+                                nn.ReLU(True),
+                                nn.Dropout2d(0.2, False))
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=1, padding=0)
         self.init_weight()
 
@@ -118,7 +121,7 @@ class acf_Module(nn.Module):
         m_batchsize, N, height, width = coarse_x.size()
 
         # CCB: Class Center Block start...
-        # 1x1conv -> F'
+        # 1x1conv -> F' 
         feat_ffm = self.conv1(feat_ffm)
         b, C, h, w = feat_ffm.size()
 
@@ -141,10 +144,9 @@ class acf_Module(nn.Module):
         # (B, N, W*H)
         proj_value = coarse_x.view(m_batchsize, N, -1)
 
-        # (B, C, W*H)
+        # # multiply (B, C', N)(B, N, W*H)-->(B, C, W*H)
         out = torch.bmm(attention, proj_value)
 
-        # multiply
         out = out.view(m_batchsize, C, height, width)
 
         # 1x1conv
@@ -161,24 +163,107 @@ class acf_Module(nn.Module):
 
 
 class ACFModule(nn.Module):
-    def __init__(self, in_channels, out_channels, num_classes):
+    def __init__(self, in_channels, out_channels):
         super(ACFModule, self).__init__()
-        self.conva = nn.Conv2d(in_channels, out_channels, 1, padding=0, bias=False)
+        
+        #self.conva = nn.Conv2d(in_channels, out_channels, 1, padding=0, bias=False)
+        
         self.acf = acf_Module(in_channels, out_channels)
+<<<<<<< HEAD
+        
+        # self.bottleneck = nn.Sequential(
+        #     nn.Conv2d(1024, 256, kernel_size=3, padding=1, dilation=1, bias=False),
+        #     InPlaceABNSync(256),
+        #     nn.Dropout2d(0.1,False),
+        #     nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        # )
+
+    def forward(self, x, coarse_x):
+        class_output = self.acf(x, coarse_x)
+        #feat_cat = torch.cat([class_output, output],dim=1)
+        return class_output
+
+
+def ASPPConv(in_channels, out_channels, atrous_rate, norm_layer):
+    block = nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, 3, padding=atrous_rate,
+                  dilation=atrous_rate, bias=False),
+        norm_layer(out_channels),
+        nn.ReLU(True))
+    return block
+
+
+class AsppPooling(nn.Module):
+    def __init__(self, in_channels, out_channels, norm_layer):
+        super(AsppPooling, self).__init__()
+        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                                 norm_layer(out_channels),
+                                 nn.ReLU(True))
+
+    def forward(self, x):
+        _, _, h, w = x.size()
+        pool = self.gap(x)
+
+        return F.interpolate(pool, (h,w), mode='bilinear', align_corners=True)
+
+class ASPP_Module(nn.Module):
+    def __init__(self, in_channels, atrous_rates, norm_layer):
+        super(ASPP_Module, self).__init__()
+        # In our re-implementation of ASPP module,
+        # we follow the original paper but change the output channel
+        # from 256 to 512 in all of four branches.
+        out_channels = in_channels // 4
+        
+        rate1, rate2, rate3 = tuple(atrous_rates)
+        self.b0 = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                                BatchNorm2d(out_channels),
+                                nn.ReLU(True))
+        self.b1 = ASPPConv(in_channels, out_channels, rate1, norm_layer)
+        self.b2 = ASPPConv(in_channels, out_channels, rate2, norm_layer)
+        self.b3 = ASPPConv(in_channels, out_channels, rate3, norm_layer)
+        self.b4 = AsppPooling(in_channels, out_channels, norm_layer)
+
+
+    def forward(self, x):
+        feat0 = self.b0(x)
+        feat1 = self.b1(x)
+        feat2 = self.b2(x)
+        feat3 = self.b3(x)
+        feat4 = self.b4(x)
+        y = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
+        return y
+
+
+class FCNHead(nn.Module):
+    def __init__(self, in_channels, out_channels, norm_layer):
+        super(FCNHead, self).__init__()
+        inter_channels = in_channels // 4
+        self.conv5 = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+                                   norm_layer(inter_channels),
+                                   nn.ReLU(),
+                                   nn.Dropout2d(0.1, False),
+                                   nn.Conv2d(inter_channels, out_channels, 1))
+
+    def forward(self, x):
+        return self.conv5(x)
+=======
         self.bottleneck = nn.Sequential(
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, dilation=1, bias=False),
             InPlaceABNSync(out_channels),
             nn.Dropout2d(0.1),
             nn.Conv2d(out_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         )
+        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x, coarse_x):
         class_output = self.acf(x, coarse_x)
         output = self.conva(x)
         # CONCAT or SUM
-        feat_sum = class_output + output
+        feat_sum = class_output * self.gamma + output
         output = self.bottleneck(feat_sum)
         return output
+>>>>>>> 2fd812363efe5e1c2ed6b42afbb2e08c650c8bfa
 
 
 class ResNet(nn.Module):
@@ -202,14 +287,30 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4, multi_grid=(1, 1, 1))
-
-        self.head = ACFModule(2048, 512, num_classes)
-
+        
+        self.aspp = ASPP_Module(in_channels=2048, atrous_rates=(12, 24, 36), norm_layer=BatchNorm2d)
+        
+        self.auxlayer = FCNHead(1024, num_classes, BatchNorm2d)
+        
         self.dsn = nn.Sequential(
-            nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1),
-            InPlaceABNSync(512),
-            nn.Dropout2d(0.1),
+            nn.Conv2d(2560, 512, 1, bias=False),
+            BatchNorm2d(512),
+            nn.ReLU(True),
+            nn.Dropout2d(0.5, False),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+            BatchNorm2d(512),
+            nn.ReLU(True),
+            nn.Dropout2d(0.1, False),
             nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.acfhead = ACFModule(2560, 512)
+
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(3072, 1024, kernel_size=3, padding=1, dilation=1, bias=False),
+            InPlaceABNSync(1024),
+            nn.Dropout2d(0.1,False),
+            nn.Conv2d(1024, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         )
         self.criterion = criterion
 
@@ -233,18 +334,31 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x, labels=None):
+        
         x = self.relu1(self.bn1(self.conv1(x)))
         x = self.relu2(self.bn2(self.conv2(x)))
         x = self.relu3(self.bn3(self.conv3(x)))
         x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x_dsn = self.dsn(x)
-        x = self.head(x, x_dsn)
-        outs = [x, x_dsn]
 
+        feat4 = self.layer1(x)
+        feat8 = self.layer2(feat4)
+        feat16 = self.layer3(feat8)
+        feat32 = self.layer4(feat16)
+
+        feat_aspp = self.aspp(feat32)
+
+        auxout = self.auxlayer(feat16)
+
+        coarse_x = self.dsn(feat_aspp)
+        
+        acf_out = self.acfhead(feat_aspp, coarse_x)
+
+        feat_cat = torch.cat([acf_out, feat_aspp],dim=1)
+        
+        pre_out = self.bottleneck(feat_cat)
+        
+        outs = [pre_out, coarse_x, auxout]
+ 
         if self.criterion is not None and labels is not None:
             return self.criterion(outs, labels)
         else:

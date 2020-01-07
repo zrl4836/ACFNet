@@ -162,11 +162,11 @@ def main():
         train_loader, train_sampler = engine.get_train_loader(dataset)
 
         # config network and criterion
-        if args.ohem:
-            criterion = CriterionOhemDSN(thresh=args.ohem_thres, min_kept=args.ohem_keep)
-        else:
-            criterion = CriterionDSN() #CriterionCrossEntropy()
-
+        # if args.ohem:
+        #     criterion = CriterionOhemDSN(thresh=args.ohem_thres, min_kept=args.ohem_keep)
+        # else:
+        #     criterion = CriterionDSN() #CriterionCrossEntropy()
+        criterion = CriterionOhemDSN(thresh=args.ohem_thres, min_kept=args.ohem_keep)
         # model = Res_Deeplab(args.num_classes, criterion=criterion,
         #         pretrained_model=args.restore_from)
         seg_model = eval('networks.' + args.model + '.Seg_Model')(

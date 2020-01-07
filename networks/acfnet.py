@@ -169,7 +169,6 @@ class ACFModule(nn.Module):
         #self.conva = nn.Conv2d(in_channels, out_channels, 1, padding=0, bias=False)
         
         self.acf = acf_Module(in_channels, out_channels)
-<<<<<<< HEAD
         
         # self.bottleneck = nn.Sequential(
         #     nn.Conv2d(1024, 256, kernel_size=3, padding=1, dilation=1, bias=False),
@@ -247,23 +246,6 @@ class FCNHead(nn.Module):
 
     def forward(self, x):
         return self.conv5(x)
-=======
-        self.bottleneck = nn.Sequential(
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, dilation=1, bias=False),
-            InPlaceABNSync(out_channels),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(out_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-        self.gamma = nn.Parameter(torch.zeros(1))
-
-    def forward(self, x, coarse_x):
-        class_output = self.acf(x, coarse_x)
-        output = self.conva(x)
-        # CONCAT or SUM
-        feat_sum = class_output * self.gamma + output
-        output = self.bottleneck(feat_sum)
-        return output
->>>>>>> 2fd812363efe5e1c2ed6b42afbb2e08c650c8bfa
 
 
 class ResNet(nn.Module):

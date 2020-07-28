@@ -53,7 +53,7 @@ class CriterionOhemDSN(nn.Module):
         scale_pred = F.interpolate(input=preds[1], size=(h, w), mode='bilinear', align_corners=True)
         loss2 = self.criterion2(scale_pred, target)
 
-        scale_pred = F.interpolate(input=preds[3], size=(h, w), mode='bilinear', align_corners=True)
+        scale_pred = F.interpolate(input=preds[2], size=(h, w), mode='bilinear', align_corners=True)
         loss3 = self.criterion2(scale_pred, target)
         
         pred = preds[0] + preds[1]
